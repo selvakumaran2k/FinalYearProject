@@ -1,101 +1,96 @@
-/*************************************************** 
-  This is an example for our Adafruit 16-channel PWM & Servo driver
-  Servo test - this will drive 8 servos, one after the other on the
-  first 8 pins of the PCA9685
+/* Sweep
+ by BARRAGAN <http://barraganstudio.com>
+ This example code is in the public domain.
 
-  Pick one up today in the adafruit shop!
-  ------> http://www.adafruit.com/products/815
-  
-  These drivers use I2C to communicate, 2 pins are required to  
-  interface.
+ modified 8 Nov 2013
+ by Scott Fitzgerald
+ http://www.arduino.cc/en/Tutorial/Sweep
+*/
+#define echoPin 2 // attach pin D2 Arduino to pin Echo of HC-SR04
+#define trigPin 3 //attach pin D3 Arduino to pin Trig of HC-SR04
 
-  Adafruit invests time and resources providing this open source code, 
-  please support Adafruit and open-source hardware by purchasing 
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada for Adafruit Industries.  
-  BSD license, all text above must be included in any redistribution
- ****************************************************/
+// defines variables
+long duration; // variable for the duration of sound wave travel
+int distance;
 #include<Arduino.h>
-#include <Wire.h>
-#include <Adafruit_PWMServoDriver.h>
+#include <Servo.h>
+void scan();
+void p(int rawoutput[16]);
+Servo myservox;
+Servo myservoy; // create servo object to control a servo
+// twelve servo objects can be created on most boards
 
-// called this way, it uses the default address 0x40
-Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
-// you can also call it with a different address you want
-//Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x41);
-// you can also call it with a different address and I2C interface
-//Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40, Wire);
-
-// Depending on your servo make, the pulse width min and max may vary, you 
-// want these to be as small/large as possible without hitting the hard stop
-// for max range. You'll have to tweak them as necessary to match the servos you
-// have!
-#define SERVOMIN  120 // This is the 'minimum' pulse length count (out of 4096)
-#define SERVOMAX  520 // This is the 'maximum' pulse length count (out of 4096)
-#define USMIN  600 // This is the rounded 'minimum' microsecond length based on the minimum pulse of 150
-#define USMAX  2400 // This is the rounded 'maximum' microsecond length based on the maximum pulse of 600
-#define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
-
-// our servo # counter
-uint8_t servonum = 0;
-
+int posx = 40;    // variable to store the servo position
+int posy = 40;
+int stepx = 5;
+int stepy = 5;
+int t =30;
+int row = 0;
+int rawoutput[16]={-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 void setup() {
-  Serial.begin(9600);
-  Serial.println("8 channel Servo test!");
-
-  pwm.begin();
-  /*
-   * In theory the internal oscillator (clock) is 25MHz but it really isn't
-   * that precise. You can 'calibrate' this by tweaking this number until
-   * you get the PWM update frequency you're expecting!
-   * The int.osc. for the PCA9685 chip is a range between about 23-27MHz and
-   * is used for calculating things like writeMicroseconds()
-   * Analog servos run at ~50 Hz updates, It is importaint to use an
-   * oscilloscope in setting the int.osc frequency for the I2C PCA9685 chip.
-   * 1) Attach the oscilloscope to one of the PWM signal pins and ground on
-   *    the I2C PCA9685 chip you are setting the value for.
-   * 2) Adjust setOscillatorFrequency() until the PWM update frequency is the
-   *    expected value (50Hz for most ESCs)
-   * Setting the value here is specific to each individual I2C PCA9685 chip and
-   * affects the calculations for the PWM update frequency. 
-   * Failure to correctly set the int.osc value will cause unexpected PWM results
-   */
-  pwm.setOscillatorFrequency(27000000);
-  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
-
-  delay(10);
-}
-
-// You can use this function if you'd like to set the pulse length in seconds
-// e.g. setServoPulse(0, 0.001) is a ~1 millisecond pulse width. It's not precise!
-void setServoPulse(uint8_t n, double pulse) {
-  double pulselength;
-  
-  pulselength = 1000000;   // 1,000,000 us per second
-  pulselength /= SERVO_FREQ;   // Analog servos run at ~60 Hz updates
-  Serial.print(pulselength); Serial.println(" us per period"); 
-  pulselength /= 4096;  // 12 bits of resolution
-  Serial.print(pulselength); Serial.println(" us per bit"); 
-  pulse *= 1000000;  // convert input seconds to us
-  pulse /= pulselength;
-  Serial.println(pulse);
-  pwm.setPWM(n, 0, pulse);
+  pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
+  pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
+  Serial.begin(9600); // // Serial Communication is starting with 9600 of baudrate speed
+  myservox.attach(9);
+  myservoy.attach(10);
+  myservox.write(40);
+  myservoy.write(40);
 }
 
 void loop() {
-  int angle[] = {0, 30, 45, 60, 90, 120, 135, 180};
-  for (int servo = 0; servo < 2;servo++){
-    for (int i = 0; i < 8; i++)
+  bool oddeven=true;
+  for (posy = 40; posy < 60;posy+=stepy)
+  {
+    myservoy.write(posy);
+    delay(t);
+        scan();
+   if(oddeven){
+    oddeven=false;
+    for (posx = 45; posx < 60;posx+=stepx)
     {
-      int pulse = map(angle[i], 0, 180, SERVOMIN, SERVOMAX);
-      pwm.setPWM(servo, 0, pulse);
-      Serial.print(angle[i]);
-      Serial.print("deg  ");
-      Serial.print(servo);
-      Serial.print(" servo");
-      Serial.print("\n");
-      delay(1000);
+      myservox.write(posx);
+      
+      delay(t);
+      scan();
+    }}else
+    {
+      oddeven=true;
+      for (posx = 50; posx > 35;posx-=stepx)
+    {
+      myservox.write(posx);
+      delay(t);
+      scan();
+
+    }
     }
   }
+  p(rawoutput);
+  row = 0;
 }
+void p(int rawoutput[16])
+{
+  for (int ite = 1; ite <= 16;ite++)
+  {
+    Serial.print("  ");
+    Serial.print(rawoutput[ite-1]);
+    if(ite%4==0){
+    Serial.println();}
+  }
+  Serial.println("____________________________________");
+  Serial.println();
+}
+ void scan()
+ {
+   digitalWrite(trigPin, LOW);
+   delayMicroseconds(2);
+   // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
+   digitalWrite(trigPin, HIGH);
+   delayMicroseconds(10);
+   digitalWrite(trigPin, LOW);
+   // Reads the echoPin, returns the sound wave travel time in microseconds
+   duration = pulseIn(echoPin, HIGH);
+   // Calculating the distance
+   distance = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
+   rawoutput[row++] = distance;
+ }
+
