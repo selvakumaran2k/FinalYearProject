@@ -35,11 +35,15 @@ int stepx = 5;
 int stepy = 5;
 int t =10;
 int row = 0;
+int button = 7;
+int scanStatusLED = A0;
 int rawoutput[16]={-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 int computed_matrix[16]={-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
 void setup() {
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin, INPUT); // Sets the echoPin as an INPUT
+  pinMode(button, INPUT_PULLUP);
+  pinMode(scanStatusLED, OUTPUT);
   Serial.begin(9600); // // Serial Communication is starting with 9600 of baudrate speed
   myservox.attach(9);
   myservoy.attach(10);
@@ -50,6 +54,7 @@ void setup() {
 }
 
 void loop() {
+  if(digitalRead(button)){
   bool oddeven=true;
   for (posy = 40; posy < 60;posy+=stepy)
   {
@@ -80,6 +85,7 @@ void loop() {
   compute(rawoutput);
   project(computed_matrix);
   row = 0;
+  }
 }
 void p(int rawoutput[16])
 {
@@ -95,6 +101,7 @@ void p(int rawoutput[16])
 }
  void scan()
  {
+   analogWrite(scanStatusLED, 512);
    digitalWrite(trigPin, LOW);
    delayMicroseconds(2);
    // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
@@ -110,6 +117,7 @@ void p(int rawoutput[16])
      distance = 800;
    }
    rawoutput[row++] = distance;
+  analogWrite(scanStatusLED, 0);
  }
 
 int angleToPulse(int ang){
@@ -130,7 +138,7 @@ void compute(int rawoutput[16])
   //raw mapping
   for (int i = 0; i < 16;i++)
   {
-    int var = map(rawoutput[i],0,800, 0, 180);
+    int var = map(rawoutput[i],0,800, 10, 170);
     computed_matrix[i] = var;
   }
   Serial.println("Computed Matrix");
