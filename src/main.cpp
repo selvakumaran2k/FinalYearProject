@@ -21,14 +21,15 @@ void project(int rawoutput[16]);
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 #define SERVOMIN  155 // this is the 'minimum' pulse length count (out of 4096)
 #define SERVOMAX  555 // this is the 'maximum' pulse length count (out of 4096)
-long duration; // variable for the duration of sound wave travel
-int distance;
+
 // our servo # counter
 uint8_t servonum = 0;
 Servo myservox;
 Servo myservoy; // create servo object to control a servo
 // twelve servo objects can be created on most boards
 //variables
+long duration; // variable for the duration of sound wave travel
+int distance;
 int posx = 40;    // variable to store the servo position
 int posy = 40;
 int stepx = 5;
@@ -54,7 +55,7 @@ void setup() {
 }
 
 void loop() {
-  if(digitalRead(button)){
+  if(digitalRead(!button)){
   bool oddeven=true;
   for (posy = 40; posy < 60;posy+=stepy)
   {
